@@ -1,39 +1,34 @@
-import numpy as np
 import cv2 as cv
-import os
+from os import path, listdir
+import numpy as np
 
-Images = []
-ID_img = []
-for filename in os.listdir("image"):
-    img = cv.imread(os.path.join("image", filename))
-    if img is not None:
-        Images.append(img)
-        ID_img.append(filename[22:-4])
+temp = 0
+Error = []
+def CheckImg(img):
+    Sus = []
 
-def Check(img,ID):
+    gray  = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
-    gray = cv.GaussianBlur(gray, (5,5), 0)
-    sobelX = cv.Sobel(gray, cv.CV_8U, 1, 0, ksize= 3)
-    ret, thresh = cv.threshold(sobelX, 110, 255, cv.THRESH_BINARY)
-
-    close_img = cv.morphologyEx(thresh, cv.MORPH_CLOSE, np.ones((5, 19)))
+    gray = cv.GaussianBlur(gray, (5, 5), 0)
+    sobelX = cv.Sobel(gray, cv.CV_8U, 1, 0, ksize=3)
+    ret, thresh = cv.threshold(sobelX, 127, 255, cv.THRESH_BINARY)
+    close_img = cv.morphologyEx(thresh, cv.MORPH_CLOSE, np.ones((5, 21)))
     contours, hiearchy = cv.findContours(close_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
     for cnt in contours:
-
         x,y,w,h = cv.boundingRect(cnt)
-        if(w*h >1500 and w*h <6500 and w> 2*h and w<5.25*h and x > 5 and y>5 and w > 80):
-            crop = img[y-5:y+h+5,x-5:x+w+5]
-            cv.rectangle(close_img, (x,y), (x+w,y+h), (0,255,0))
-    cv.imshow(ID, close_img)
+        if (w * h > 2000 and w * h < 6500 and w > 3 * h and w < 5.25 * h and x > 5 and y > 5 and w > 90 and h>15):
+            crop = img[y - 5:y + h + 5, x - 5:x + w + 5]
+            Sus.append(crop)
+            #cv.rectangle(img, (x,y), (x+w,y+h), (0,0,255))
+    if len(Sus) ==1:
+        return (Sus[0], True)
+    else:
+        return (None, False)
 
-for img in range(len(Images)):
-    Check(Images[img], ID_img[img])
-
-cv.waitKey(0)
-
-
-
-
+for filename in listdir("image"):
+    img = cv.imread(path.join("image",filename))
+    if img is not None:
+        s = CheckImg(img)
+        if s[1] == True:
+            cv.imwrite(path.join("Save", str(temp)+".jpg"),s[0])
+            temp +=1
